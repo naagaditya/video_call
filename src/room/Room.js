@@ -1,39 +1,42 @@
 import React from 'react';
 import db from '../firebase.config';
+
 const configuration = {"iceServers":[{"urls":["stun:turn2.l.google.com"]}]};
 
 export default function Room() {
-  let localStream, remoteStream;
+  let localStream, remoteStreams = {};
   const openUserMedia = async () => {
     localStream = await navigator.mediaDevices.getUserMedia(
-      {video: true, audio: true});
+      {video: true, audio: false});
     document.querySelector('#localVideo').srcObject = localStream;
-    remoteStream = new MediaStream();
-    document.querySelector('#remoteVideo').srcObject = remoteStream;
   }
   openUserMedia();
   const roomId = window.location.search.split('=')[1];
   const roomRef = db.collection('rooms').doc(`${roomId}`);
-  const remoteStreams = {};
   const RTCPeerConnections = {};
   let myId = 0;
   const createConnection = async (candidateId) => {
     const connection = new RTCPeerConnection(configuration);
-    const sendChannel = connection.createDataChannel("sendChannel");
-    sendChannel.onopen = e => console.log("open!!!!");
-    RTCPeerConnections[candidateId] = connection;
-    remoteStreams[candidateId] = new MediaStream();
-    // document.querySelector('#remoteVideo').srcObject = remoteStreams[candidateId];
-    connection.ontrack = event => {
-      event.streams[0].getTracks().forEach(track => {
-        remoteStreams[candidateId].addTrack(track);
-        remoteStream.addTrack(track);
-      });
-    }
-    localStream.getTracks().forEach(track => {
+    localStream && localStream.getTracks().forEach(track => {
       console.log('adding track in connection');
       connection.addTrack(track, localStream);
     });
+    const sendChannel = connection.createDataChannel("sendChannel");
+    sendChannel.onopen = e => {
+      console.log("open!!!!");
+      const remoteVideo = document.createElement ("video");
+      remoteVideo.playsInline = true;
+      remoteVideo.autoplay = true;
+      remoteVideo.srcObject = remoteStreams[candidateId];
+      document.getElementById('room').appendChild(remoteVideo);
+    };
+    RTCPeerConnections[candidateId] = connection;
+    remoteStreams[candidateId] = new MediaStream();
+    connection.ontrack = event => {
+      event.streams[0].getTracks().forEach(track => {
+        remoteStreams[candidateId].addTrack(track);
+      });
+    }
     connection.onicecandidate = async e =>  {
       console.log(" NEW ice candidate!! ", e.candidate );
       if (e.candidate) {
@@ -74,21 +77,26 @@ export default function Room() {
         if (data && data.offer && !RTCPeerConnections[candidateId]) {
           const offer = data.offer;
           const connection = new RTCPeerConnection(configuration);
-          const sendChannel = connection.createDataChannel("sendChannel");
-          sendChannel.onopen = e => console.log("open!!!!");
-          RTCPeerConnections[candidateId] = connection;
-          remoteStreams[candidateId] = new MediaStream();
-          // document.querySelector('#remoteVideo').srcObject = remoteStreams[candidateId];
-          connection.ontrack = event => {
-            event.streams[0].getTracks().forEach(track => {
-              remoteStreams[candidateId].addTrack(track);
-              remoteStream.addTrack(track);
-            });
-          }
-          localStream.getTracks().forEach(track => {
+          localStream && localStream.getTracks().forEach(track => {
             console.log('adding track in connection');
             connection.addTrack(track, localStream);
           });
+          const sendChannel = connection.createDataChannel("sendChannel");
+          sendChannel.onopen = e => {
+            console.log("open!!")
+            const remoteVideo = document.createElement ("video");
+            remoteVideo.playsInline = true;
+            remoteVideo.autoplay = true;
+            remoteVideo.srcObject = remoteStreams[candidateId];
+            document.getElementById('room').appendChild(remoteVideo);
+          };
+          RTCPeerConnections[candidateId] = connection;
+          remoteStreams[candidateId] = new MediaStream();
+          connection.ontrack = event => {
+            event.streams[0].getTracks().forEach(track => {
+              remoteStreams[candidateId].addTrack(track);
+            });
+          }
           connection.onicecandidate = async e =>  {
             console.log(" NEW ice candidate!! ", e.candidate );
             if (e.candidate) {
@@ -138,9 +146,8 @@ export default function Room() {
   }
   init();
   return (
-    <div>
+    <div id="room">
       <video id="localVideo" muted autoPlay playsInline></video>
-      <video id="remoteVideo" autoPlay playsInline></video>
     </div>
   );
 }
