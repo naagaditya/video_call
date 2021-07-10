@@ -108,7 +108,7 @@ export default function Room() {
   init();
   return (
     <div id="room">
-      <video id="localVideo" muted autoPlay playsInline></video>
+      <video id="localVideo" muted autoPlay playsInline style={{width: '100%', maxWidth: '500px'}}></video>
     </div>
   );
 }
