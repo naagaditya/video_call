@@ -20,7 +20,7 @@ export default function Room() {
     RTCPeerConnections[candidateId] = connection;
     connection.onicecandidate = async e =>  {
       console.log(" NEW ice candidate!! ", e.candidate );
-      if (e.candidate) {
+      if (e.candidate && e.candidate.protocol === 'udp') {
         await roomRef.update({
           [`${candidateId}.${myId}.candidate_for_${myId}`]: firebase.firestore.FieldValue.arrayUnion(e.candidate.toJSON())
         });
@@ -61,7 +61,7 @@ export default function Room() {
           RTCPeerConnections[candidateId] = connection;
           connection.onicecandidate = async e =>  {
             console.log(" NEW ice candidate!! ", e.candidate );
-            if (e.candidate) {
+            if (e.candidate && e.candidate.protocol === 'udp') {
               await roomRef.update({
                 [`${myId}.${candidateId}.candidate_for_${myId}`]: firebase.firestore.FieldValue.arrayUnion(e.candidate.toJSON())
               });
