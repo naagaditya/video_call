@@ -1,6 +1,7 @@
 import React from 'react';
 import db from '../firebase.config';
-import createNewConnection from './createNewConnection'
+import createNewConnection from './createNewConnection';
+import firebase from 'firebase'
 
 export default function Room() {
   let localStream;
@@ -21,7 +22,7 @@ export default function Room() {
       console.log(" NEW ice candidate!! ", e.candidate );
       if (e.candidate && e.candidate.protocol === 'udp') {
         await roomRef.update({
-          [`${candidateId}.${myId}.candidate_for_${myId}`]: e.candidate.toJSON()
+          [`${candidateId}.${myId}.candidate_for_${myId}`]: firebase.firestore.FieldValue.arrayUnion(e.candidate.toJSON())
         });
       }
     }
@@ -60,9 +61,9 @@ export default function Room() {
           RTCPeerConnections[candidateId] = connection;
           connection.onicecandidate = async e =>  {
             console.log(" NEW ice candidate!! ", e.candidate );
-            if (e.candidate && e.candidate.protocol === 'udp') {
+            if (e.candidate) {
               await roomRef.update({
-                [`${myId}.${candidateId}.candidate_for_${myId}`]: e.candidate.toJSON()
+                [`${myId}.${candidateId}.candidate_for_${myId}`]: firebase.firestore.FieldValue.arrayUnion(e.candidate.toJSON())
               });
             }
           }
@@ -81,10 +82,14 @@ export default function Room() {
           console.log('step 2: set offer created answer and updated answer');
         }
         if ( data && data[`candidate_for_${myId}`]) {
-          const candidate = new RTCIceCandidate(data[`candidate_for_${myId}`]);
-          await RTCPeerConnections[candidateId].addIceCandidate(candidate);
-          // console.log('recieve candidate and added');
-          // console.log('state => ', RTCPeerConnections[candidateId].connectionState);
+          const iceCandidates = data[`candidate_for_${myId}`];
+          iceCandidates.some(async iceCandidate => {
+            if (RTCPeerConnections[candidateId].connectionState === 'connected') {
+              return true;
+            }
+            const candidate = new RTCIceCandidate(iceCandidate);
+            await RTCPeerConnections[candidateId].addIceCandidate(candidate);
+          });
         }
       });
       // search answer, consume answer and setRemoteDescription
@@ -97,10 +102,14 @@ export default function Room() {
           console.log('Step 3: Got the answer and set the answer to remote');
         }
         if ( data && data[`candidate_for_${candidateId}`]) {
-          const candidate = new RTCIceCandidate(data[`candidate_for_${candidateId}`]);
-          await connection.addIceCandidate(candidate);
-          // console.log('recieve candidate and added');
-          // console.log('state => ', connection.connectionState);
+          const iceCandidates = data[`candidate_for_${candidateId}`];
+          iceCandidates.some(async iceCandidate => {
+            if (connection.connectionState === 'connected') {
+              return true;
+            }
+            const candidate = new RTCIceCandidate(iceCandidate);
+            await connection.addIceCandidate(candidate);
+          });
         }
       });
     });
