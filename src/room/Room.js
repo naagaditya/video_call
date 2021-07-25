@@ -128,7 +128,7 @@ export default function Room() {
         if ( data && data[`try_canditate_start`]) {
           const candidateIndex = data[`try_canditate`];
           const iceCandidates = data[`candidate_for_${candidateId}`] || [];
-          iceCandidates.some(async iceCandidate => {
+          await iceCandidates.some(async iceCandidate => {
             if (connection.connectionState === 'connected') {
               console.log("connected")
               return true;
