@@ -26,6 +26,13 @@ export default function Room() {
         });
       }
     }
+    connection.onicegatheringstatechange = async ev => {
+      if (ev.target.iceGatheringState === 'complete' && connection.connectionState !== 'connected') {
+        await roomRef.update({
+          [`${candidateId}.${myId}.iceGatheringComplete_for_${myId}`]: true
+        });
+      }
+    }
     connection.onicecandidateerror = (e) => {console.log(e.errorText)}
     const offer = await connection.createOffer();
     await roomRef.update({
@@ -54,6 +61,9 @@ export default function Room() {
       // search offer, consume offer and create answer
       const myDataConnections = snapshot.data()[myId];
       Object.keys(myDataConnections).forEach(async candidateId => {
+        if (RTCPeerConnections[candidateId] && RTCPeerConnections[candidateId].connectionState === 'connected') {
+          return;
+        }
         const data = myDataConnections[candidateId];
         if (data && data.offer && !RTCPeerConnections[candidateId]) {
           const offer = data.offer;
@@ -64,6 +74,13 @@ export default function Room() {
             if (e.candidate) {
               await roomRef.update({
                 [`${myId}.${candidateId}.candidate_for_${myId}`]: firebase.firestore.FieldValue.arrayUnion(e.candidate.toJSON())
+              });
+            }
+          }
+          connection.onicegatheringstatechange = async ev => {
+            if (ev.target.iceGatheringState === 'complete' && connection.connectionState !== 'connected') {
+              await roomRef.update({
+                [`${myId}.${candidateId}.iceGatheringComplete_for_${myId}`]: true
               });
             }
           }
@@ -81,17 +98,21 @@ export default function Room() {
           });
           console.log('step 2: set offer created answer and updated answer');
         }
-        if ( data && data[`candidate_for_${myId}`]) {
-          const iceCandidates = data[`candidate_for_${myId}`];
-          iceCandidates.some(async iceCandidate => {
-            console.log("trying ", iceCandidate)
-            if (RTCPeerConnections[candidateId].connectionState === 'connected') {
-              console.log("connected")
-              return true;
-            }
+        if (data && data[`iceGatheringComplete_for_${myId}`] && data[`iceGatheringComplete_for_${candidateId}`]) {
+          // this is use to initiate trying candidate pairs
+          await roomRef.update({
+            [`${myId}.${candidateId}.try_canditate`]: 0,
+            [`${myId}.${candidateId}.iceGatheringComplete_for_${myId}`]: false,
+            [`${myId}.${candidateId}.iceGatheringComplete_for_${candidateId}`]: false,
+          });        
+        }
+        if (data && data[`try_canditate`] >= 0) {
+          const candidateIndex = data[`try_canditate`];
+          const iceCandidate = data[`candidate_for_${myId}`][candidateIndex];  
+          if (iceCandidate) {
             const candidate = new RTCIceCandidate(iceCandidate);
-            await RTCPeerConnections[candidateId].addIceCandidate(candidate);
-          });
+            await RTCPeerConnections[candidateId].addIceCandidate(candidate);   
+          }
         }
       });
       // search answer, consume answer and setRemoteDescription
@@ -103,17 +124,24 @@ export default function Room() {
           await connection.setRemoteDescription(answer);
           console.log('Step 3: Got the answer and set the answer to remote');
         }
-        if ( data && data[`candidate_for_${candidateId}`]) {
-          const iceCandidates = data[`candidate_for_${candidateId}`];
+        if ( data && data[`try_canditate`] >= 0) {
+          const candidateIndex = data[`try_canditate`];
+          const iceCandidates = data[`candidate_for_${candidateId}`] || [];
           iceCandidates.some(async iceCandidate => {
-            console.log("trying ", iceCandidate)
             if (connection.connectionState === 'connected') {
               console.log("connected")
               return true;
             }
-            const candidate = new RTCIceCandidate(iceCandidate);
-            await connection.addIceCandidate(candidate);
+            if (iceCandidate) {
+              const candidate = new RTCIceCandidate(iceCandidate);
+              await connection.addIceCandidate(candidate);
+            }
           });
+          if (connection.connectionState !== 'connected' && candidateIndex < data[`candidate_for_${myId}`].length) {
+            await roomRef.update({
+              [`${candidateId}.${myId}.try_canditate`]: candidateIndex + 1
+            }); 
+          }
         }
       });
     });
