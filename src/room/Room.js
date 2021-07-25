@@ -104,14 +104,16 @@ export default function Room() {
             [`${myId}.${candidateId}.iceGatheringComplete_for_${candidateId}`]: false,
           });        
         }
-        if (data && data[`try_canditate`] >= 0) {
+        if (data && data[`try_canditate`] >= 0 && !data['try_canditate_start']) {
           const candidateIndex = data[`try_canditate`];
-          console.log('trying ', candidateIndex, ` candidate_for_${myId}`);
           const iceCandidate = data[`candidate_for_${myId}`][candidateIndex];  
           if (iceCandidate) {
             const candidate = new RTCIceCandidate(iceCandidate);
             await RTCPeerConnections[candidateId].addIceCandidate(candidate);   
           }
+          await roomRef.update({
+            [`${myId}.${candidateId}.try_canditate_start`]: true
+          }); 
         }
       });
       // search answer, consume answer and setRemoteDescription
@@ -123,9 +125,8 @@ export default function Room() {
           await connection.setRemoteDescription(answer);
           console.log('Step 3: Got the answer and set the answer to remote');
         }
-        if ( data && data[`try_canditate`] >= 0) {
+        if ( data && data[`try_canditate_start`]) {
           const candidateIndex = data[`try_canditate`];
-          console.log('trying ', candidateIndex, ` candidate_for_${candidateId}`);
           const iceCandidates = data[`candidate_for_${candidateId}`] || [];
           iceCandidates.some(async iceCandidate => {
             if (connection.connectionState === 'connected') {
@@ -139,7 +140,8 @@ export default function Room() {
           });
           if (connection.connectionState !== 'connected' && candidateIndex < data[`candidate_for_${myId}`].length) {
             await roomRef.update({
-              [`${candidateId}.${myId}.try_canditate`]: candidateIndex + 1
+              [`${candidateId}.${myId}.try_canditate`]: candidateIndex + 1,
+              [`${candidateId}.${myId}.try_canditate_start`]: false
             }); 
           }
         }
