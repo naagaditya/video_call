@@ -19,7 +19,6 @@ export default function Room() {
     const connection = createNewConnection(localStream);
     RTCPeerConnections[candidateId] = connection;
     connection.onicecandidate = async e =>  {
-      console.log(" NEW ice candidate!! ", e.candidate );
       if (e.candidate) {
         await roomRef.update({
           [`${candidateId}.${myId}.candidate_for_${myId}`]: firebase.firestore.FieldValue.arrayUnion(e.candidate.toJSON())
@@ -70,7 +69,6 @@ export default function Room() {
           const connection = createNewConnection(localStream);
           RTCPeerConnections[candidateId] = connection;
           connection.onicecandidate = async e =>  {
-            console.log(" NEW ice candidate!! ", e.candidate );
             if (e.candidate) {
               await roomRef.update({
                 [`${myId}.${candidateId}.candidate_for_${myId}`]: firebase.firestore.FieldValue.arrayUnion(e.candidate.toJSON())
@@ -108,6 +106,7 @@ export default function Room() {
         }
         if (data && data[`try_canditate`] >= 0) {
           const candidateIndex = data[`try_canditate`];
+          console.log('trying ', candidateIndex, ` candidate_for_${myId}`);
           const iceCandidate = data[`candidate_for_${myId}`][candidateIndex];  
           if (iceCandidate) {
             const candidate = new RTCIceCandidate(iceCandidate);
@@ -126,6 +125,7 @@ export default function Room() {
         }
         if ( data && data[`try_canditate`] >= 0) {
           const candidateIndex = data[`try_canditate`];
+          console.log('trying ', candidateIndex, ` candidate_for_${candidateId}`);
           const iceCandidates = data[`candidate_for_${candidateId}`] || [];
           iceCandidates.some(async iceCandidate => {
             if (connection.connectionState === 'connected') {
