@@ -1,7 +1,7 @@
 import appendVideo from './appendVideo'
 const configuration = {"iceServers":[{"urls":["stun:turn2.l.google.com"]}]};
 
-const createNewConnection = (localStream, candidateId, connectedCandidates) => {
+const createNewConnection = (localStream, candidateId) => {
   const connection = new RTCPeerConnection(configuration);
   localStream && localStream.getTracks().forEach(track => {
     console.log('adding track in connection');
@@ -12,8 +12,14 @@ const createNewConnection = (localStream, candidateId, connectedCandidates) => {
   sendChannel.onopen = e => {
     console.log("open!!!!", candidateId);
     window.connectedCandidates.push(`${candidateId}`);
-    appendVideo(remoteStream);
+    appendVideo(remoteStream, candidateId);
   };
+  sendChannel.onclose = e => {
+    console.log("close!!!!", candidateId);
+    const indexToRemove = window.connectedCandidates.indexOf(`${candidateId}`);
+    window.connectedCandidates.splice(indexToRemove, 1);
+    document.getElementById(`video${candidateId}`).remove();
+  }
   connection.ontrack = event => {
     event.streams[0].getTracks().forEach(track => {
       remoteStream.addTrack(track);
