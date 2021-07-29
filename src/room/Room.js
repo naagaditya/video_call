@@ -128,7 +128,7 @@ export default function Room() {
         if ( data && data[`try_canditate_start`]) {
           const candidateIndex = data[`try_canditate`];
           const iceCandidates = data[`candidate_for_${candidateId}`] || [];
-          await iceCandidates.some(async iceCandidate => {
+          for (const iceCandidate of iceCandidates) {
             if (connection.connectionState === 'connected') {
               console.log("connected")
               return true;
@@ -137,7 +137,7 @@ export default function Room() {
               const candidate = new RTCIceCandidate(iceCandidate);
               await connection.addIceCandidate(candidate);
             }
-          });
+          }
           if (connection.connectionState !== 'connected' && candidateIndex < data[`candidate_for_${myId}`].length) {
             await roomRef.update({
               [`${candidateId}.${myId}.try_canditate`]: candidateIndex + 1,
