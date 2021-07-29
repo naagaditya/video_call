@@ -76,53 +76,52 @@ export default function Room() {
         // search offer, consume offer and create answer
         const myDataConnections = snapshot.data()[myId];
         for (const candidateId of Object.keys(myDataConnections)) {
-          if (RTCPeerConnections[candidateId] && window.connectedCandidates.includes(candidateId)) {
-            return;
-          }
-          const data = myDataConnections[candidateId];
-          if (data && data.offer && !RTCPeerConnections[candidateId]) {
-            const offer = data.offer;
-            const connection = createNewConnection(localStream, candidateId);
-            RTCPeerConnections[candidateId] = connection;
-            connection.onicecandidate = e =>  {
-              updateCadidateArray(e.candidate, candidateId);
-            }
-            connection.onicegatheringstatechange = ev => {
-              updateICEGathering(ev.target.iceGatheringState, candidateId);
-            }
-            const remoteOffer = new RTCSessionDescription(offer);
-            await connection.setRemoteDescription(remoteOffer);
-            const answer = await connection.createAnswer()
-            await connection.setLocalDescription(answer);
-            await roomRef.update({
-              [`${myId}.${candidateId}`]: {
-                answer: {
-                  type: answer.type,
-                  sdp: answer.sdp
-                }
+          if (!window.connectedCandidates.includes(candidateId)) {
+            const data = myDataConnections[candidateId];
+            if (data && data.offer && !RTCPeerConnections[candidateId]) {
+              const offer = data.offer;
+              const connection = createNewConnection(localStream, candidateId);
+              RTCPeerConnections[candidateId] = connection;
+              connection.onicecandidate = e =>  {
+                updateCadidateArray(e.candidate, candidateId);
               }
-            });
-            console.log('step 2: set offer created answer and updated answer');
-          }
-          if (data && data[`iceGatheringComplete_for_${myId}`] && data[`iceGatheringComplete_for_${candidateId}`]) {
-            // this is use to initiate trying candidate pairs
-            await roomRef.update({
-              [`${myId}.${candidateId}.try_canditate`]: 0,
-              [`${myId}.${candidateId}.iceGatheringComplete_for_${myId}`]: false,
-              [`${myId}.${candidateId}.iceGatheringComplete_for_${candidateId}`]: false,
-            });        
-          }
-          if (data && data[`try_canditate`] >= 0 && !data['try_canditate_start'] && !window.connectedCandidates.includes(candidateId)) {
-            const candidateIndex = data[`try_canditate`];
-            const iceCandidate = data[`candidate_for_${myId}`][candidateIndex];  
-            if (iceCandidate) {
-              const candidate = new RTCIceCandidate(iceCandidate);
-              await RTCPeerConnections[candidateId].addIceCandidate(candidate);
-              console.log('tried ', candidateIndex);
+              connection.onicegatheringstatechange = ev => {
+                updateICEGathering(ev.target.iceGatheringState, candidateId);
+              }
+              const remoteOffer = new RTCSessionDescription(offer);
+              await connection.setRemoteDescription(remoteOffer);
+              const answer = await connection.createAnswer()
+              await connection.setLocalDescription(answer);
+              await roomRef.update({
+                [`${myId}.${candidateId}`]: {
+                  answer: {
+                    type: answer.type,
+                    sdp: answer.sdp
+                  }
+                }
+              });
+              console.log('step 2: set offer created answer and updated answer');
             }
-            await roomRef.update({
-              [`${myId}.${candidateId}.try_canditate_start`]: true
-            }); 
+            if (data && data[`iceGatheringComplete_for_${myId}`] && data[`iceGatheringComplete_for_${candidateId}`]) {
+              // this is use to initiate trying candidate pairs
+              await roomRef.update({
+                [`${myId}.${candidateId}.try_canditate`]: 0,
+                [`${myId}.${candidateId}.iceGatheringComplete_for_${myId}`]: false,
+                [`${myId}.${candidateId}.iceGatheringComplete_for_${candidateId}`]: false,
+              });        
+            }
+            if (data && data[`try_canditate`] >= 0 && !data['try_canditate_start'] && !window.connectedCandidates.includes(candidateId)) {
+              const candidateIndex = data[`try_canditate`];
+              const iceCandidate = data[`candidate_for_${myId}`][candidateIndex];  
+              if (iceCandidate) {
+                const candidate = new RTCIceCandidate(iceCandidate);
+                await RTCPeerConnections[candidateId].addIceCandidate(candidate);
+                console.log('tried ', candidateIndex);
+              }
+              await roomRef.update({
+                [`${myId}.${candidateId}.try_canditate_start`]: true
+              }); 
+            }
           }
         }
         // search answer, consume answer and setRemoteDescription
