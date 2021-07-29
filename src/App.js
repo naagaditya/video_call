@@ -11,7 +11,7 @@ function App() {
   }
   const createRoom = async () => {
     const roomRef = await db.collection('rooms').add({});
-    window.location.href = `${window.location.href}?roomId=${roomRef.id}`
+    window.location.href = `${window.location.href}?roomId=${roomRef.id}`;
   }
   return (
     <div className="App">

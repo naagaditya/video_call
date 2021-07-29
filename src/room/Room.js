@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import db from '../firebase.config';
 import createNewConnection from './createNewConnection';
 import firebase from 'firebase'
@@ -16,6 +16,21 @@ export default function Room() {
   const roomRef = db.collection('rooms').doc(`${roomId}`);
   const RTCPeerConnections = {};
   let myId = 0;
+  useEffect(() => {
+    window.addEventListener('beforeunload', async (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+      for (const candidateId of Object.keys(RTCPeerConnections)) {
+        RTCPeerConnections[candidateId].close();
+        await roomRef.update({
+          [`${candidateId}.${myId}`]: firebase.firestore.FieldValue.delete()
+        });
+      }
+      await roomRef.update({
+        [myId]: firebase.firestore.FieldValue.delete()
+      });
+    });
+  },[]);
   const createConnection = async (candidateId) => {
     const connection = createNewConnection(localStream, candidateId);
     RTCPeerConnections[candidateId] = connection;
