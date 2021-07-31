@@ -37,7 +37,7 @@ export default function Room() {
     connection.onicecandidate = async e =>  {
       if (e.candidate) {
         await roomRef.update({
-          [`${candidateId}.${myId}.candidate_for_${myId}`]: firebase.firestore.FieldValue.arrayUnion(e.candidate.toJSON())
+          [`${candidateId}.${myId}.candidate_for_${candidateId}`]: firebase.firestore.FieldValue.arrayUnion(e.candidate.toJSON())
         });
       }
     }
@@ -64,7 +64,7 @@ export default function Room() {
   const updateCadidateArray = async (candidate, candidateId) => {
     if (candidate) {
       await roomRef.update({
-        [`${myId}.${candidateId}.candidate_for_${myId}`]: firebase.firestore.FieldValue.arrayUnion(candidate.toJSON())
+        [`${myId}.${candidateId}.candidate_for_${candidateId}`]: firebase.firestore.FieldValue.arrayUnion(candidate.toJSON())
       });
     }
   }
