@@ -174,9 +174,10 @@ export default function Room() {
   }
   function resolveWhenConnectionStateFailOrConnected(con) {
     return new Promise(resolve => {
+      console.log(con.connectionState);
       setInterval(() => {
         if (con.connectionState ==='connected' || con.connectionState ==='failed') {
-          resolve('con.connectionState');
+          resolve(con.connectionState);
         }
       }, 500);
     });
