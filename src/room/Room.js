@@ -156,6 +156,8 @@ export default function Room() {
                 const candidate = new RTCIceCandidate(iceCandidate);
                 await connection.addIceCandidate(candidate);
                 console.log('tried ', candidateIndex);
+                const result = await resolveAfter2Seconds();
+                console.log(result);
               }
             }
             if (!window.connectedCandidates.includes(candidateId) && candidateIndex < data[`candidate_for_${candidateId}`].length) {
@@ -167,6 +169,13 @@ export default function Room() {
           }
         }
       }
+    });
+  }
+  function resolveAfter2Seconds() {
+    return new Promise(resolve => {
+      setTimeout(() => {
+        resolve('resolved');
+      }, 2000);
     });
   }
   init();

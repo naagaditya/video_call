@@ -25,6 +25,7 @@ const createNewConnection = (localStream, candidateId) => {
       remoteStream.addTrack(track);
     });
   }
+  window.myConnection = connection;
   return connection;
 }
 export default createNewConnection;
