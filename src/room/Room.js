@@ -131,7 +131,8 @@ export default function Room() {
               if (iceCandidate) {
                 const candidate = new RTCIceCandidate(iceCandidate);
                 await RTCPeerConnections[candidateId].addIceCandidate(candidate);
-                console.log('tried ', candidateIndex);
+                const result = await resolveAfter2Seconds();
+                console.log('tried ', candidateIndex, RTCPeerConnections[candidateId].connectionState);
               }
               await roomRef.update({
                 [`${myId}.${candidateId}.try_canditate_start`]: true
@@ -157,10 +158,10 @@ export default function Room() {
                 await connection.addIceCandidate(candidate);
                 console.log('tried ', candidateIndex);
                 const result = await resolveAfter2Seconds();
-                console.log(result);
+                console.log(result, connection.connectionState);
               }
             }
-            if (!window.connectedCandidates.includes(candidateId) && candidateIndex < data[`candidate_for_${candidateId}`].length) {
+            if (!window.connectedCandidates.includes(candidateId) && candidateIndex + 1 < data[`candidate_for_${candidateId}`].length) {
               await roomRef.update({
                 [`${candidateId}.${myId}.try_canditate`]: candidateIndex + 1,
                 [`${candidateId}.${myId}.try_canditate_start`]: false
