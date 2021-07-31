@@ -150,7 +150,7 @@ export default function Room() {
           }
           if ( data && data[`try_canditate_start`] && !window.connectedCandidates.includes(candidateId)) {
             const candidateIndex = data[`try_canditate`];
-            const iceCandidates = data[`candidate_for_${candidateId}`] || [];
+            const iceCandidates = data[`candidate_for_${myId}`] || [];
             for (const iceCandidate of iceCandidates) {
               if (!window.connectedCandidates.includes(candidateId) && iceCandidate) {
                 const candidate = new RTCIceCandidate(iceCandidate);
