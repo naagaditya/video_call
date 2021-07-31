@@ -131,7 +131,7 @@ export default function Room() {
               if (iceCandidate) {
                 const candidate = new RTCIceCandidate(iceCandidate);
                 await RTCPeerConnections[candidateId].addIceCandidate(candidate);
-                const result = await resolveAfter2Seconds();
+                // const result = await resolveWhenConnectionStateFailOrConnected(RTCPeerConnections[candidateId]);
                 console.log('tried ', candidateIndex, RTCPeerConnections[candidateId].connectionState);
               }
               await roomRef.update({
@@ -157,7 +157,7 @@ export default function Room() {
                 const candidate = new RTCIceCandidate(iceCandidate);
                 await connection.addIceCandidate(candidate);
                 console.log('tried ', candidateIndex);
-                const result = await resolveAfter2Seconds();
+                const result = await resolveWhenConnectionStateFailOrConnected(connection);
                 console.log(result, connection.connectionState);
               }
             }
@@ -172,11 +172,13 @@ export default function Room() {
       }
     });
   }
-  function resolveAfter2Seconds() {
+  function resolveWhenConnectionStateFailOrConnected(con) {
     return new Promise(resolve => {
-      setTimeout(() => {
-        resolve('resolved');
-      }, 2000);
+      setInterval(() => {
+        if (con.connectionState ==='connected' || con.connectionState ==='failed') {
+          resolve('con.connectionState');
+        }
+      }, 500);
     });
   }
   init();

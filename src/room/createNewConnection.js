@@ -25,6 +25,22 @@ const createNewConnection = (localStream, candidateId) => {
       remoteStream.addTrack(track);
     });
   }
+  connection.onconnectionstatechange = function(event) {
+    console.log(connection.connectionState)
+    switch(connection.connectionState) {
+      case "connected":
+        // The connection has become fully connected
+        break;
+      case "disconnected":
+      case "failed":
+        // One or more transports has terminated unexpectedly or in an error
+        break;
+      case "closed":
+        // The connection has been closed
+        break;
+      default:
+    }
+  }
   window.myConnection = connection;
   return connection;
 }
