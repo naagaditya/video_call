@@ -158,7 +158,7 @@ export default function Room() {
                 console.log('tried ', candidateIndex);
               }
             }
-            if (!window.connectedCandidates.includes(candidateId) && candidateIndex < data[`candidate_for_${myId}`].length) {
+            if (!window.connectedCandidates.includes(candidateId) && candidateIndex < data[`candidate_for_${candidateId}`].length) {
               await roomRef.update({
                 [`${candidateId}.${myId}.try_canditate`]: candidateIndex + 1,
                 [`${candidateId}.${myId}.try_canditate_start`]: false
